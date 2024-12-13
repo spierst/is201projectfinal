@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Skeet Shooting Game - Approaching Clays</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        cursor: none;
+        background: #87CEEB; /* Sky blue background */
+    }
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+<canvas></canvas>
+<script>
+    const c = document.querySelector('canvas');
+    const x = c.getContext('2d');
+
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+    c.width = w;
+    c.height = h;
+
+    let score = 0;
+    let miss = 0;
+    let level = 0;
+
+    // Start target above the screen, moving downward toward the player
+    let target = {
+        x: Math.random() * w,
+        y: -40,
+        vy: 5
+    };
+
+    let mouse = { x: w/2, y: h/2 };
+
+    window.onmousemove = e => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+    };
+
+    window.onclick = () => {
+        let dist = Math.hypot(mouse.x - target.x, mouse.y - target.y);
+        let radius = getRadius(target.y);
+        if (dist < radius) {
+            // Hit!
+            score++;
+            level++;
+            resetTarget();
+        } else {
+            // Missed
+            miss++;
+            if (miss >= 3) {
+                alert('Game Over! Score: ' + score);
+                location.reload();
+            }
+        }
+    };
+
+    function resetTarget() {
+        target.y = -40;
+        target.x = Math.random() * w;
+        target.vy = 5 + level;  // Increase speed with each hit
+    }
+
+    // Calculate radius based on y-position: small at top (far away), large at bottom (close)
+    function getRadius(y) {
+        let minRadius = 10;
+        let maxRadius = 40;
+        // Ratio of how far down the screen the target is, 0 at top, 1 at bottom
+        let ratio = y / h;
+        if (ratio < 0) ratio = 0;
+        if (ratio > 1) ratio = 1;
+        return minRadius + (maxRadius - minRadius) * ratio;
+    }
+
+    function update() {
+        target.y += target.vy;
+
+        // If target moves off the bottom of the screen, count as miss
+        if (target.y > h + 40) {
+            miss++;
+            resetTarget();
+            if (miss >= 3) {
+                alert('Game Over! Score: ' + score);
+                return;
+            }
+        }
+    }
+
+    function draw() {
+        // Clear background
+        x.fillStyle = '#87CEEB';
+        x.fillRect(0, 0, w, h);
+
+        // Draw aiming reticle
+        x.beginPath();
+        x.arc(mouse.x, mouse.y, 10, 0, 2 * Math.PI);
+        x.fillStyle = '#000';
+        x.fill();
+        x.beginPath();
+        x.arc(mouse.x, mouse.y, 2, 0, 2 * Math.PI);
+        x.fillStyle = '#fff';
+        x.fill();
+
+        // Draw target with perspective scaling
+        let radius = getRadius(target.y);
+        x.beginPath();
+        x.arc(target.x, target.y, radius, 0, 2 * Math.PI);
+        x.fillStyle = 'orange';
+        x.fill();
+
+        // Draw score
+        x.fillStyle = '#000';
+        x.font = '20px sans-serif';
+        x.fillText('Score: ' + score + '  Miss: ' + miss + '/3', 10, 30);
+    }
+
+    function loop() {
+        update();
+        draw();
+        if (miss < 3) {
+            requestAnimationFrame(loop);
+        }
+    }
+
+    loop();
+
+    window.onresize = () => {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        c.width = w;
+        c.height = h;
+        mouse.x = w/2;
+        mouse.y = h/2;
+        resetTarget();
+    };
+</script>
+</body>
+</html>
